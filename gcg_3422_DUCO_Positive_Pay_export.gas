@@ -1,0 +1,235 @@
+program.sub.screenSU.start
+gui.Form1..create
+gui.Form1..caption("POSITIVE PAY")
+gui.Form1..size(3360,4305)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,form1_unload)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(8)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(-2147483633)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(True)
+gui.Form1..minbutton(True)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(True)
+gui.Form1..ShowInTaskBar(True)
+gui.Form1..titlebar(True)
+
+gui.Form1.frame1.create(frame)
+gui.Form1.frame1.caption("SELECT DATE ")
+gui.Form1.frame1.visible(True)
+gui.Form1.frame1.size(2745,2505)
+gui.Form1.frame1.zorder(0)
+gui.Form1.frame1.position(200,200)
+gui.Form1.frame1.enabled(True)
+gui.Form1.frame1.fontname("Arial")
+gui.Form1.frame1.fontsize(8)
+gui.Form1.datepicker1.create(datepicker)
+gui.Form1.datepicker1.visible(True)
+gui.Form1.datepicker1.size(1935,285)
+gui.Form1.datepicker1.zorder(0)
+gui.Form1.datepicker1.position(600,690)
+gui.Form1.datepicker1.enabled(True)
+gui.Form1.cmdOK.create(button)
+gui.Form1.cmdOK.caption("OK")
+gui.Form1.cmdOK.visible(True)
+gui.Form1.cmdOK.size(855,375)
+gui.Form1.cmdOK.zorder(0)
+gui.Form1.cmdOK.position(200,3025)
+gui.Form1.cmdOK.enabled(True)
+gui.Form1.cmdOK.fontname("Arial")
+gui.Form1.cmdOK.fontsize(8)
+gui.Form1.cmdOK.event(click,Detail)
+gui.Form1.cmdCNCL.create(button)
+gui.Form1.cmdCNCL.caption("CANCEL")
+gui.Form1.cmdCNCL.visible(True)
+gui.Form1.cmdCNCL.size(855,375)
+gui.Form1.cmdCNCL.zorder(0)
+gui.Form1.cmdCNCL.position(2050,3025)
+gui.Form1.cmdCNCL.enabled(True)
+gui.Form1.cmdCNCL.fontname("Arial")
+gui.Form1.cmdCNCL.fontsize(8)
+gui.Form1.cmdCNCL.event(click,form1_unload)
+program.sub.screenSU.end
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+'complete date 06/024/09
+'JCT
+
+'open ODBC connection
+Function.Odbc.Connection!Conx.Openconnection(Variable.Ambient.pDSN,Variable.Ambient.PUser,Variable.Ambient.PPass)
+
+Gui.Form1..Show
+
+
+
+
+
+Program.Sub.Main.End
+
+Program.Sub.Detail.Start
+Gui.Form1.cmdCNCL.Enabled(false)
+Gui.Form1.cmdOK.Enabled(false)
+
+V.local.export.declare(String)
+V.local.hold.declare(String)
+V.Local.Detail.Declare(String)
+V.Local.I.declare(Long)
+V.Local.split.Declare(String)
+V.Local.cents.Declare(String)
+V.Local.dollars.Declare(String)
+V.Local.zero.Declare(String)
+V.Local.FileName.Declare(String)
+V.Local.iHndl.Declare(Long)
+V.Local.sVM.Declare(String)
+
+
+V.Local.RecordType.Declare(String)
+V.Local.account.Declare(String)
+V.Local.ChkSerial.Declare(String)
+V.Local.sChkDate.Declare(String)
+V.Local.ChkAmt.Declare(String)
+V.Local.Vndr.Declare(String)
+V.Local.Filler.Declare(String)
+V.Local.AddData.Declare(String)
+V.Local.ExAddData.Declare(String)
+V.Local.Payee.Declare(String)
+V.Local.BankNo.Declare(String)
+
+
+V.Local.date.Declare(String)
+V.Local.month.Declare(String)
+V.Local.day.Declare(String)
+V.Local.year.Declare(String)
+V.Local.dateitems.Declare(String)
+V.Local.StrtDate.Declare(String)
+V.Local.EndDate.Declare(String)
+V.Local.sFileDate.Declare(String)
+V.Local.FileYr.Declare(String)
+
+
+'format date
+
+V.Local.date.Set(V.Screen.Form1!datepicker1.Value)
+	F.Intrinsic.String.Split(V.Local.date,"/",V.Local.dateitems)
+		V.Local.month.Set(V.Local.dateitems(0))
+			F.Intrinsic.String.LPad(V.Local.month,"0",2,V.Local.month)
+		V.Local.day.Set(V.Local.dateitems(1))
+			F.Intrinsic.String.LPad(V.Local.day,"0",2,V.Local.day)
+		V.Local.year.Set(V.Local.dateitems(2))
+			F.Intrinsic.String.Concat(V.Local.year,V.Local.month,V.Local.day,V.Local.date)
+
+		F.Intrinsic.String.Right(V.Local.year,2,V.Local.FileYr)
+			F.Intrinsic.String.Concat(V.Local.month,V.Local.day,V.Local.fileyr,V.Local.sFileDate)
+
+'set write to file attributes
+Function.Intrinsic.File.Gethandle(Variable.Local.iHndl)
+
+Function.Intrinsic.String.Concat(Variable.Caller.FilesDir,"\DUCO",V.Local.sFileDate,".txt",Variable.Local.Filename)
+Function.Intrinsic.File.Openforwrite(Variable.Local.Filename,Variable.Local.iHndl)
+
+
+'select data for correct date and account number
+F.intrinsic.string.concat("select * from CHECKS_LOG where CK_DATE='",V.Local.date,"'order by CK_NO",V.Local.Detail)
+F.Odbc.Connection!Conx.Openrecordsetro("rstDetail",V.Local.Detail)
+'loop through file to get each data line
+	F.Intrinsic.Control.dountil(Variable.Odbc.Conx!rstDetail.Eof,=,True)
+'-------Type
+		F.Intrinsic.Control.If(V.ODBC.Conx!rstDetail.FieldValTrim!CK_OR_VOID,=,"C")
+			V.Local.RecordType.Set("I")
+		F.Intrinsic.Control.Elseif(V.ODBC.Conx!rstDetail.FieldValTrim!CK_OR_VOID,=,"V")
+			V.Local.RecordType.Set("C")
+		F.Intrinsic.Control.EndIf
+
+'---------Account	
+		V.Local.account.Set("790230411")
+'----------ChkNo
+		V.Local.ChkSerial.Set(V.ODBC.Conx!rstDetail.FieldValTrim!CK_NO)
+
+'-----------ISSUE DATE
+		V.Local.schkdate.Set(V.ODBC.Conx!rstDetail.FieldValTrim!CK_DATE)
+			F.Intrinsic.String.Mid(V.Local.sChkDate,3,2,V.Local.year)
+			F.Intrinsic.String.Mid(V.Local.sChkDate,5,2,V.Local.month)
+			F.Intrinsic.String.Mid(V.Local.sChkDate,7,2,V.Local.day)
+			F.Intrinsic.String.Concat(V.Local.month,V.Local.day,V.Local.year,V.Local.sChkDate)
+
+'--------Amount
+		V.Local.ChkAmt.Set(V.ODBC.Conx!rstDetail.FieldValTrim!AMOUNT)
+			F.Intrinsic.String.Format(V.Local.ChkAmt,"0.00",V.Local.ChkAmt)
+			F.Intrinsic.String.Replace(V.Local.ChkAmt,"-","",V.Local.ChkAmt)
+
+'--------Additional Data
+
+'------Payee
+	F.Intrinsic.String.Concat("select NAME_VENDOR from VENDOR_MASTER where REC='2' and VENDOR ='",V.ODBC.Conx!rstDetail.FieldValTrim!VEND_NO,"'",V.Local.sVM)
+	F.ODBC.Connection!Conx.OpenRecordsetRO("rstVM",V.Local.sVM)
+		F.Intrinsic.Control.If(V.ODBC.Conx!rstVM.EOF,=,False)
+			V.Local.Payee.Set(V.ODBC.Conx!rstVM.FieldValTrim!NAME_VENDOR)
+		F.Intrinsic.Control.Else
+			V.Local.Payee.Set("")
+		F.Intrinsic.Control.EndIf
+	F.ODBC.Conx!rstVM.Close
+
+		F.Intrinsic.String.Concat(" ",V.Ambient.dblQuote,V.Local.Payee,V.Ambient.dblQuote," ",V.local.payee)
+		
+
+
+'----Addl Data
+		V.Local.Vndr.Set("")
+
+
+
+	
+	V.local.export.redim(0,7)
+		V.local.export(0).set(V.Local.RecordType)
+		V.Local.export(1).Set(V.Local.account)
+		V.Local.export(2).Set(V.Local.ChkSerial)
+		V.Local.export(3).Set(V.Local.sChkDate)
+		V.Local.export(4).Set(V.Local.ChkAmt)
+		V.Local.export(5).Set(V.Local.Filler)
+		V.local.export(6).set(V.Local.Payee)
+'		V.Local.export(7).Set(V.Local.Vndr)
+
+	V.local.hold.set("")
+	F.Intrinsic.Control.For(V.Local.I,V.Local.export.Lbound,V.Local.export.Ubound,1)
+		F.intrinsic.control.if(V.Local.I,=,0)
+			V.Local.hold.Set(V.Local.export(0))
+		F.intrinsic.control.elseif(V.Local.i,<>,0)
+			F.intrinsic.string.concat(V.Local.hold,",",V.Local.export(V.Local.I),V.Local.hold)
+		F.intrinsic.control.endif
+	F.intrinsic.control.next(V.Local.I)
+F.Intrinsic.String.Len(V.Local.hold,V.Local.I)
+F.Intrinsic.Debug.Stop
+
+
+	F.Intrinsic.File.Writeline(V.Local.iHndl,V.Local.Hold)
+	F.Odbc.Conx!rstDetail.movenext
+F.intrinsic.control.loop
+F.Odbc.Conx!rstDetail.Close
+
+
+F.Intrinsic.File.CloseFile(V.Local.iHndl)
+f.Intrinsic.Control.CallSub(form1_unload)
+
+Program.Sub.Detail.End
+
+program.sub.form1_unload.start
+
+
+
+F.ODBC.Connection!Conx.Close
+F.Intrinsic.Control.End
+
+
+program.sub.form1_unload.end
+
+
